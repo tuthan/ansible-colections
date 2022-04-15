@@ -1,0 +1,33 @@
+---
+# vars file for ansible-rsyslog
+
+#Turn this off if don't want rsyslog recieve log from remote
+enable_receiver: no
+rsyslog_default_rules:
+  - { rule: 'auth,authpriv.*', logpath: '/var/log/auth.log' }
+  - { rule: '*.*;auth,authpriv.none', logpath: '-/var/log/syslog' }
+  - { rule: 'mail.*', logpath: '-/var/log/maillog' }
+  - { rule: 'cron.*', logpath: '/var/log/cron' }
+  - { rule: 'uucp,news.crit', logpath: '/var/log/spooler' }
+  - { rule: 'local7.*', logpath: '/var/log/boot.log' }
+  - { rule: 'daemon.*', logpath: '-/var/log/daemon.log' }
+  - { rule: 'kern.*', logpath: '-/var/log/kern.log' }
+  - { rule: 'lpr.*', logpath: '-/var/log/lpr.log' }
+  - { rule: 'user.*', logpath: '-/var/log/user.log' }
+  - { rule: '*.emerg', logpath: ':omusrmsg:*' }
+
+#Posible rule for custom rules
+enable_remote_rules: no
+logpath_prefix: "/var/log"
+
+logpath_custom: "{{logpath_prefix}}/log-custom.log"
+ips_custom: "'192.168.1.2'"
+rsyslog_from_remote_rules:
+  - { ips: "{{ips_custom}}", logpath: '{{logpath_custom}}'}
+enable_tls: no
+certificate_path: "/etc/ssl/cert"
+certificate_name: "domain.com"
+rsyslog_port: 514
+rsyslog_tls_port: 6514
+
+

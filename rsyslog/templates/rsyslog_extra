@@ -1,0 +1,8 @@
+{{logpath_custom}} {
+        missingok
+        rotate 10
+        daily
+        maxsize 50M
+        compress
+        delaycompress
+      }

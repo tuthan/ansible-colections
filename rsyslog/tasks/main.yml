@@ -1,0 +1,26 @@
+---
+# tasks file for ansible-rsyslog
+- name: install rsyslog
+  ansible.builtin.package:
+    name: rsyslog
+    state: "present"
+- name: install rsyslog-gnutls
+  ansible.builtin.package:
+    name: rsyslog-gnutls
+    state: "present"
+  when: enable_tls
+- name: configuring rsyslog
+  ansible.builtin.template:
+    src: "rsyslog.conf.j2"
+    dest: /etc/rsyslog.conf
+    mode: "0644"
+  notify:
+    - restart rsyslog
+
+- name: additional file for logrotate
+  template:
+    src: "rsyslog_extra"
+    dest: "/etc/logrotate.d/rsyslog_extra"
+    mode: 0644
+  when: enable_remote_rules
+

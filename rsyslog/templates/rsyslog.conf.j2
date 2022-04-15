@@ -1,0 +1,104 @@
+# {{ ansible_managed }}
+# /etc/rsyslog.conf configuration file for rsyslog
+#
+# For more information install rsyslog-doc and see
+# /usr/share/doc/rsyslog-doc/html/configuration/index.html
+
+
+#################
+#### MODULES ####
+#################
+module(load="imuxsock") # provides support for local system logging
+module(load="imklog")   # provides kernel logging support
+#module(load="immark")  # provides --MARK-- message capability
+
+{% if enable_tls %}
+####If need to enable tls ###
+# make gtls driver the default and set certificate files
+global(
+DefaultNetstreamDriver="gtls"
+DefaultNetstreamDriverCAFile="{{certificate_path}}/{{certificate_name}}.chain.pem"
+DefaultNetstreamDriverCertFile="{{certificate_path}}/{{certificate_name}}.fullchain.pem"
+DefaultNetstreamDriverKeyFile="{{certificate_path}}/{{certificate_name}}.privkey.pem"
+)
+
+# load TCP listener
+module(
+load="imtcp"
+StreamDriver.Name="gtls"
+StreamDriver.Mode="1"
+StreamDriver.Authmode="anon"
+)
+
+# start up listener at port {{rsyslog_tls_port}}
+input(
+type="imtcp"
+port="{{rsyslog_tls_port}}"
+)
+{% else %}
+
+###If don't need tls ###
+
+
+# provides UDP syslog reception
+{{ '' if enable_receiver else '#' }}module(load="imudp") # needs to be done just once
+{{ '' if enable_receiver else '#' }}input(type="imudp" port="{{rsyslog_port}}")
+
+# provides TCP syslog reception
+{{ '' if enable_receiver else '#' }}module(load="imtcp") # needs to be done just once
+{{ '' if enable_receiver else '#' }}input(type="imtcp" port="{{rsyslog_port}}")
+
+{% endif %}
+###########################
+#### GLOBAL DIRECTIVES ####
+###########################
+
+#
+# Use traditional timestamp format.
+# To enable high precision timestamps, comment out the following line.
+#
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+
+#
+# Set the default permissions for all log files.
+#
+$FileOwner root
+$FileGroup adm
+$FileCreateMode 0640
+$DirCreateMode 0755
+$Umask 0022
+
+#
+# Where to place spool and state files
+#
+$WorkDirectory /var/spool/rsyslog
+
+#
+# Include all config files in /etc/rsyslog.d/
+#
+$IncludeConfig /etc/rsyslog.d/*.conf
+
+
+###############
+#### RULES ####
+###############
+
+{% if enable_remote_rules %}
+# Storing Messages from a Remote System into a specific File
+{% for item in rsyslog_from_remote_rules %}
+if $fromhost-ip == {{ item.ips }} then {
+        action(type="omfile" file="{{ item.logpath }}")
+        stop
+    }
+{% endfor %}
+{% endif %}
+
+{% if rsyslog_default_rules is defined %}
+#
+# Some standard log files.  Log by facility.
+#
+
+{% for item in rsyslog_default_rules %}
+{{ item.rule }} {{ item.logpath }}
+{% endfor %}
+{% endif %}
